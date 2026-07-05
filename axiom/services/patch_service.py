@@ -80,14 +80,66 @@ class PatternRule:
     confidence: float
 
 
+# Detectors are tuned to minimise false positives (PRD's <25% FP target). Each
+# requires the risk to appear in a real code construct, not just a keyword —
+# e.g. SQL only inside an interpolated string, `shell=True` case-sensitive, a
+# credential literal that is not a URL.
 PATTERNS: list[PatternRule] = [
-    PatternRule("sql_injection", re.compile(r"(SELECT|INSERT|UPDATE|DELETE).*\{.*\}|f['\"].*(SELECT|WHERE)", re.IGNORECASE), _patch_sql_injection, 0.82),
-    PatternRule("command_injection", re.compile(r"shell\s*=\s*True|os\.system\(", re.IGNORECASE), _patch_command_injection, 0.85),
-    PatternRule("deserialization", re.compile(r"pickle\.loads|yaml\.load\((?!.*Loader)", re.IGNORECASE), _patch_deserialization, 0.8),
-    PatternRule("path_traversal", re.compile(r"open\([^)]*(\.\.|request|input|argv)", re.IGNORECASE), _patch_path_traversal, 0.7),
-    PatternRule("hardcoded_credentials", re.compile(r"(password|secret|token|api_key)\s*=\s*['\"][^'\"]+['\"]", re.IGNORECASE), _patch_hardcoded_secret, 0.78),
-    PatternRule("unchecked_null", re.compile(r"\.get\([^)]*\)\.\w+|\[\s*['\"]?\w+['\"]?\s*\]\.\w+"), _patch_unchecked_null, 0.6),
-    PatternRule("race_condition", re.compile(r"global\s+\w+|threading\.|\+=\s*1"), _patch_race_condition, 0.55),
+    # SQL keyword interpolated into an f-string/format alongside a SQL clause.
+    PatternRule(
+        "sql_injection",
+        re.compile(
+            r"f['\"][^'\"]*\b(SELECT|INSERT|UPDATE|DELETE)\b[^'\"]*\b(FROM|INTO|SET|WHERE)\b"
+            r"|['\"][^'\"]*\b(SELECT|INSERT|UPDATE|DELETE)\b[^'\"]*['\"]\s*[+%]\s*\w",
+            re.IGNORECASE,
+        ),
+        _patch_sql_injection,
+        0.82,
+    ),
+    # Case-sensitive: real Python is shell=True (capital T), not the string "shell=true".
+    PatternRule(
+        "command_injection",
+        re.compile(r"shell\s*=\s*True|\bos\.system\(|\bsubprocess\.call\([^)]*shell\s*=\s*True"),
+        _patch_command_injection,
+        0.85,
+    ),
+    PatternRule(
+        "deserialization",
+        re.compile(r"pickle\.loads|yaml\.load\((?!.*Loader)", re.IGNORECASE),
+        _patch_deserialization,
+        0.8,
+    ),
+    PatternRule(
+        "path_traversal",
+        re.compile(r"open\([^)]*(\.\.|request\.|input\(|argv)", re.IGNORECASE),
+        _patch_path_traversal,
+        0.7,
+    ),
+    # Credential var assigned a short literal that is NOT a URL.
+    PatternRule(
+        "hardcoded_credentials",
+        re.compile(
+            r"\b\w*(password|passwd|secret|api_key|apikey|token)\w*\s*=\s*"
+            r"['\"](?!https?://)[^'\"\s]{6,}['\"]",
+            re.IGNORECASE,
+        ),
+        _patch_hardcoded_secret,
+        0.78,
+    ),
+    PatternRule(
+        "unchecked_null",
+        re.compile(r"\.get\([^)]*\)\.\w+|\[\s*['\"]\w+['\"]\s*\]\.\w+"),
+        _patch_unchecked_null,
+        0.6,
+    ),
+    # Conservative: shared instance-attribute mutation (classic race), not every
+    # `+= 1` counter or `threading.` import.
+    PatternRule(
+        "race_condition",
+        re.compile(r"self\.\w+\s*\+=|global\s+\w+\s*\n\s*\w+\s*="),
+        _patch_race_condition,
+        0.55,
+    ),
 ]
 
 

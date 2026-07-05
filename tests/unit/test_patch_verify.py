@@ -14,7 +14,7 @@ TRIGGERS = [
     "open(request.args['f'])",
     'token = "abc123"',
     "d['k'].v",
-    "n += 1",
+    "self.n += 1",
 ]
 
 

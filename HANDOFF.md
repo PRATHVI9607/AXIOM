@@ -18,6 +18,12 @@
 - **Fixed passlib/bcrypt 4.x incompatibility** — replaced passlib with direct `bcrypt` in `core/security.py` (72-byte cap handled); updated pyproject dep.
 - **Added PRD-required tests:** `test_embedder.py`, `test_security.py`, `test_auth_ws.py` (eBPF client fallback, WebSocket auth accept/reject, GNN model, patch API). **Total now 50 tests, all pass.**
 
+## Session 3 — UI redesign + detector fixes + extension packaging
+- **Dashboard redesigned** (design-taste-frontend skill; product-UI, not landing tropes): self-hosted Geist Sans/Mono, Phosphor icons, one cool accent (`#38bdf8`), off-black `ink` palette, one radius, dark theme lock. New: `components/ui.tsx` (Gauge, StatTile, RiskBadge, Skeleton, EmptyState, StatusDot), `components/Layout.tsx` (sidebar + topbar with live backend status poll), rebuilt Overview (health gauge + risk buckets + top-risk list + skeleton/empty states) and Intent Graph pages, restyled ForceGraph. `tsc` clean, Vite build clean (213KB JS / 67KB gz).
+- **Fixed detector false positives** (real AXIOM accuracy bug): tightened patch regexes — SQL only inside interpolated strings, `shell=True` case-sensitive (was matching our own `"shell=true"` signal literal), credential literal must not be a URL (was flagging `GITHUB_TOKEN = "https://…"`), race = shared instance-attr mutation (not every `+= 1`). Self-scan FPs dropped **12 files → 4** (remaining are legit null-deref smells). Updated 2 test samples. 50 tests pass.
+- **Extension packaged + installed:** `vscode-extension/axiom-intelligence-1.0.0.vsix`, installed into VS Code 1.109 via `code --install-extension`. Added `AXIOM: Set API Token` / `Set Project Id` commands, README, LICENSE, `.vscodeignore`.
+- **`SETUP.md`** — full setup + usage + troubleshooting guide. **`scripts/demo.py`** seeds AXIOM-self analysis and prints a ready dashboard link (token+project embedded); dashboard reads `?token=&project=` from the URL.
+
 ## Session 3 fixes (post real-run hardening)
 - **Embedder circuit breaker** — once a provider is unreachable it stops retrying for the run. Full `psf/requests` scan with default Ollama provider (no server) dropped from minutes → **11s**. Added 1s connect timeout on the Ollama call.
 - **Blast-radius default threshold 0.6 → 0.35** — 0.6 returned empty on real code (combined score = 0.5·pagerank + 0.5·risk peaks ~0.5). Now returns real cascades with failure paths.

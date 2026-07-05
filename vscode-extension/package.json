@@ -4,6 +4,7 @@
   "description": "Inline failure-risk scoring and blast-radius prediction powered by AXIOM",
   "version": "1.0.0",
   "publisher": "axiom",
+  "repository": { "type": "git", "url": "https://github.com/PRATHVI9607/AXIOM" },
   "engines": { "vscode": "^1.85.0" },
   "categories": ["Linters", "Machine Learning", "Other"],
   "activationEvents": [

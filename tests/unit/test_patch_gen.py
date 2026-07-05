@@ -10,7 +10,7 @@ SAMPLES = {
     "path_traversal": "open(request.args['file'])",
     "hardcoded_credentials": 'password = "hunter2"',
     "unchecked_null": "value = data['user'].name",
-    "race_condition": "counter += 1",
+    "race_condition": "self.counter += 1",
 }
 
 

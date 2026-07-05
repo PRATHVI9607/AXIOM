@@ -49,6 +49,13 @@ export interface GraphResponse {
   page: number;
 }
 
+export interface HealthScore {
+  current_score: number;
+  high_risk_count: number;
+  medium_risk_count: number;
+  low_risk_count: number;
+}
+
 const BASE = "/api/v1";
 
 function authHeaders(): HeadersInit {
@@ -70,8 +77,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 export const api = {
   health: () => request<HealthResponse>("/health"),
   graph: (projectId: string) => request<GraphResponse>(`/graph/${projectId}`),
-  health_score: (projectId: string) =>
-    request<{ current_score: number; high_risk_count: number }>(`/graph/${projectId}/health`),
+  health_score: (projectId: string) => request<HealthScore>(`/graph/${projectId}/health`),
   analyzeFunction: (projectId: string, functionId: string) =>
     request<FunctionAnalysis>("/analyze/function", {
       method: "POST",

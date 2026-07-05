@@ -150,5 +150,5 @@ export default function ForceGraph({
     };
   }, [nodes, edges, onSelect]);
 
-  return <canvas ref={canvasRef} className="w-full rounded-lg bg-axiom-panel border border-slate-800" />;
+  return <canvas ref={canvasRef} className="w-full rounded-lg border border-line bg-ink-900" />;
 }

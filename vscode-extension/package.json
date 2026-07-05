@@ -17,7 +17,26 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "axiom",
+          "title": "AXIOM",
+          "icon": "media/scepter.svg"
+        }
+      ]
+    },
+    "views": {
+      "axiom": [
+        {
+          "id": "axiom.riskView",
+          "name": "Workspace Risk",
+          "type": "webview"
+        }
+      ]
+    },
     "commands": [
+      { "command": "axiom.scanWorkspace", "title": "AXIOM: Scan Workspace", "icon": "$(search)" },
       { "command": "axiom.analyzeFile", "title": "AXIOM: Analyze Current File" },
       { "command": "axiom.analyzeWorkspace", "title": "AXIOM: Analyze Workspace" },
       { "command": "axiom.openDashboard", "title": "AXIOM: Open Dashboard" },
@@ -25,6 +44,11 @@
       { "command": "axiom.setToken", "title": "AXIOM: Set API Token" },
       { "command": "axiom.setProject", "title": "AXIOM: Set Project Id" }
     ],
+    "menus": {
+      "view/title": [
+        { "command": "axiom.scanWorkspace", "when": "view == axiom.riskView", "group": "navigation" }
+      ]
+    },
     "configuration": {
       "title": "AXIOM",
       "properties": {

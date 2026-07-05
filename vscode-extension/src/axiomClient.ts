@@ -70,4 +70,56 @@ export class AxiomClient {
     }
     return (await res.json()) as GraphResponse;
   }
+
+  private async authHeaders(context: vscode.ExtensionContext): Promise<Record<string, string>> {
+    const token = await this.token(context);
+    return {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  }
+
+  async createProject(
+    context: vscode.ExtensionContext,
+    name: string,
+    rootPath: string
+  ): Promise<string> {
+    const res = await fetch(`${this.baseUrl}/api/v1/projects`, {
+      method: "POST",
+      headers: await this.authHeaders(context),
+      body: JSON.stringify({ name, root_path: rootPath.replace(/\\/g, "/"), languages: [] }),
+    });
+    if (!res.ok) {
+      throw new Error(`Create project failed: ${res.status}`);
+    }
+    return ((await res.json()) as { id: string }).id;
+  }
+
+  async analyzeWorkspace(context: vscode.ExtensionContext, projectId: string): Promise<void> {
+    const res = await fetch(
+      `${this.baseUrl}/api/v1/analyze/workspace?project_id=${projectId}`,
+      { method: "POST", headers: await this.authHeaders(context) }
+    );
+    if (!res.ok) {
+      throw new Error(`Analyze failed: ${res.status}`);
+    }
+  }
+
+  async getHealthScore(
+    context: vscode.ExtensionContext,
+    projectId: string
+  ): Promise<{ current_score: number; high_risk_count: number; medium_risk_count: number; low_risk_count: number }> {
+    const res = await fetch(`${this.baseUrl}/api/v1/graph/${projectId}/health`, {
+      headers: await this.authHeaders(context),
+    });
+    if (!res.ok) {
+      throw new Error(`Health fetch failed: ${res.status}`);
+    }
+    return (await res.json()) as {
+      current_score: number;
+      high_risk_count: number;
+      medium_risk_count: number;
+      low_risk_count: number;
+    };
+  }
 }

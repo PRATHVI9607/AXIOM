@@ -18,6 +18,12 @@
 - **Fixed passlib/bcrypt 4.x incompatibility** — replaced passlib with direct `bcrypt` in `core/security.py` (72-byte cap handled); updated pyproject dep.
 - **Added PRD-required tests:** `test_embedder.py`, `test_security.py`, `test_auth_ws.py` (eBPF client fallback, WebSocket auth accept/reject, GNN model, patch API). **Total now 50 tests, all pass.**
 
+## Session 3 — VS Code sidebar (scepter icon, scan current workspace)
+- Added an activity-bar container "AXIOM" with a custom Loki-scepter SVG icon (`media/scepter.svg`) and a webview view "Workspace Risk" (`src/views/RiskViewProvider.ts`).
+- Sidebar flow: **Scan workspace** button → creates/reuses a project for the open folder (cached in `workspaceState`), runs `/analyze/workspace`, polls the graph, renders a health score + risk buckets + clickable risk list (click a row → jumps to file:line). Feeds nodes to the gutter decorations too. Needs a token once (`AXIOM: Set API Token`).
+- Client gained `createProject` / `analyzeWorkspace` / `getHealthScore`. New command `axiom.scanWorkspace` (also in the view title bar). Repackaged + reinstalled the vsix (10.8 KB). Web dashboard kept as-is.
+- New `scripts/analyze.py <path>` — analyze ANY project over HTTP, prints dashboard link + token/project.
+
 ## Session 3 — UI redesign + detector fixes + extension packaging
 - **Dashboard redesigned** (design-taste-frontend skill; product-UI, not landing tropes): self-hosted Geist Sans/Mono, Phosphor icons, one cool accent (`#38bdf8`), off-black `ink` palette, one radius, dark theme lock. New: `components/ui.tsx` (Gauge, StatTile, RiskBadge, Skeleton, EmptyState, StatusDot), `components/Layout.tsx` (sidebar + topbar with live backend status poll), rebuilt Overview (health gauge + risk buckets + top-risk list + skeleton/empty states) and Intent Graph pages, restyled ForceGraph. `tsc` clean, Vite build clean (213KB JS / 67KB gz).
 - **Fixed detector false positives** (real AXIOM accuracy bug): tightened patch regexes — SQL only inside interpolated strings, `shell=True` case-sensitive (was matching our own `"shell=true"` signal literal), credential literal must not be a URL (was flagging `GITHUB_TOKEN = "https://…"`), race = shared instance-attr mutation (not every `+= 1`). Self-scan FPs dropped **12 files → 4** (remaining are legit null-deref smells). Updated 2 test samples. 50 tests pass.

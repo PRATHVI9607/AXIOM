@@ -1,0 +1,16 @@
+<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- AXIOM sidebar icon: a scepter — gem spearhead over a staff (Loki-scepter motif).
+       Monochrome; VS Code tints it with the activity-bar foreground color. -->
+  <g fill="currentColor">
+    <!-- gem / spear tip -->
+    <path d="M12 1.5 L15.2 5.5 L12 11 L8.8 5.5 Z" opacity="0.9"/>
+    <!-- inner facet -->
+    <path d="M12 4 L13.4 5.7 L12 9 L10.6 5.7 Z" opacity="0.45"/>
+    <!-- crossguard -->
+    <rect x="7.5" y="10.4" width="9" height="1.7" rx="0.8"/>
+    <!-- staff -->
+    <rect x="11.1" y="12" width="1.8" height="10.5" rx="0.9"/>
+    <!-- pommel -->
+    <circle cx="12" cy="22.6" r="1.2"/>
+  </g>
+</svg>

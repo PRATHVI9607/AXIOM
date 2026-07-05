@@ -2,10 +2,12 @@
 import * as vscode from "vscode";
 import { AxiomClient } from "./axiomClient";
 import { RiskDecorations } from "./providers/RiskDecorations";
+import { RiskViewProvider } from "./views/RiskViewProvider";
 
 const client = new AxiomClient();
 let statusBar: vscode.StatusBarItem;
 let decorations: RiskDecorations;
+let riskView: RiskViewProvider;
 
 function projectId(): string {
   return vscode.workspace.getConfiguration("axiom").get<string>("projectId", "default");
@@ -27,6 +29,16 @@ export function activate(context: vscode.ExtensionContext): void {
     cfg.get<number>("riskThreshold.error", 0.8)
   );
   decorations.register(context);
+
+  // Sidebar risk view (Loki-scepter activity-bar icon).
+  riskView = new RiskViewProvider(context, client, (nodes) => decorations.apply(nodes));
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(RiskViewProvider.viewType, riskView),
+    vscode.commands.registerCommand("axiom.scanWorkspace", () => {
+      riskView.reveal();
+      void riskView.scan();
+    })
+  );
 
   statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   statusBar.command = "axiom.openDashboard";

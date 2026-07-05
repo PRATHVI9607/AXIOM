@@ -63,20 +63,23 @@ Open the link printed by `demo.py` (token + project baked in). Two tabs:
 
 ---
 
-## 4. VS Code extension (inline risk while you code)
+## 4. VS Code extension (sidebar + inline risk)
 
 **Install the packaged extension (permanent):**
 ```powershell
-code --install-extension c:\Workspace\AXIOM\vscode-extension\axiom-intelligence-1.0.0.vsix
+code --install-extension c:\Workspace\AXIOM\vscode-extension\axiom-intelligence-1.0.0.vsix --force
 ```
 Then reload VS Code. Or, for development, open `vscode-extension/` and press **F5**.
 
-**Configure once (Command Palette, `Ctrl+Shift+P`):**
-1. `AXIOM: Set API Token` — paste the token from `demo.py`
-2. `AXIOM: Set Project Id` — paste the project id
+**The AXIOM sidebar (easiest path):**
+1. Click the **scepter icon** in the activity bar (left rail) → the "Workspace Risk" panel opens.
+2. First time only: it asks for a token → paste one from `demo.py` / `analyze.py` (Command Palette `AXIOM: Set API Token`).
+3. Click **Scan workspace** (or the search icon in the panel title). It analyzes the **current folder** and lists functions by risk with a health score. Click any row to jump to that line.
 
-Open a source file → red/amber/green gutter dots per function, hover for the score,
-high-risk functions appear in the **Problems** panel. Status bar bottom-right shows backend state.
+No project id needed — the sidebar creates/reuses a project for the open folder automatically.
+
+**Inline while coding:** open a source file → red/amber/green gutter dots per function,
+hover for the score, high-risk functions in the **Problems** panel, backend state in the status bar.
 
 ---
 

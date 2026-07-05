@@ -26,19 +26,20 @@ def main() -> None:
     w1 = rng.normal(0, 0.3, size=(concat_dim, HIDDEN)).astype(np.float32)
     b1 = np.zeros(HIDDEN, dtype=np.float32)
 
-    # Layer 2: hidden -> 1. Random init.
-    w2 = rng.normal(0, 0.4, size=(HIDDEN, 1)).astype(np.float32)
-    b2 = np.array([-0.4], dtype=np.float32)  # bias toward lower baseline risk
+    # Layer 2: hidden -> 1. Random init, strongly negative bias so the baseline
+    # (feature-poor) function scores LOW; only risk-correlated inputs lift it up.
+    w2 = rng.normal(0, 0.35, size=(HIDDEN, 1)).astype(np.float32)
+    b2 = np.array([-3.2], dtype=np.float32)
 
     # Bias the network so risk-correlated inputs (lexical signal, runtime priv/net/spawn)
     # propagate to a higher score. Feature indices (self half): 0=risk_signal, 1=loc,
     # 2=fan_in, 3=fan_out, 4=file, 5=net, 6=spawn, 7=priv.
-    emphasize = {0: 1.2, 5: 0.8, 6: 1.0, 7: 1.4, 2: 0.5}
+    emphasize = {0: 0.9, 5: 0.5, 6: 0.7, 7: 1.1, 2: 0.3}
     for idx, weight in emphasize.items():
         w1[idx, :] += weight  # self-feature channels
-        w1[FEATURE_DIM + idx, :] += weight * 0.6  # neighbor-aggregated channels
+        w1[FEATURE_DIM + idx, :] += weight * 0.4  # neighbor-aggregated channels
     # Route hidden activations positively to the output head.
-    w2[:, 0] += 0.5
+    w2[:, 0] += 0.9
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     np.savez(OUT, w1=w1, b1=b1, w2=w2, b2=b2, feature_dim=FEATURE_DIM, hidden=HIDDEN)

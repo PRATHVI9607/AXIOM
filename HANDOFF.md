@@ -18,6 +18,13 @@
 - **Fixed passlib/bcrypt 4.x incompatibility** — replaced passlib with direct `bcrypt` in `core/security.py` (72-byte cap handled); updated pyproject dep.
 - **Added PRD-required tests:** `test_embedder.py`, `test_security.py`, `test_auth_ws.py` (eBPF client fallback, WebSocket auth accept/reject, GNN model, patch API). **Total now 50 tests, all pass.**
 
+## Real-world run (session 3) — validated on psf/requests over HTTP
+- Booted the actual uvicorn API, created a project pointing at a cloned real repo (`psf/requests`, 19 files), ran `/analyze/workspace`, fetched `/graph` + `/graph/health` + `/analyze/function` over HTTP.
+- Result: **268 functions, 347 edges**; blast radius returned in 4–7ms.
+- **Recalibrated the bundled GNN weights** (`scripts/gen_gnn_weights.py`): initial weights over-fired (81% high-risk). Retuned bias/emphasis → now **34 high (13%), 80 med, 154 low**, median risk 0.26 — within PRD's <25% FP target. Top-risk are plausible: `request`, `send` (sessions), `build_digest_header` (auth). Regenerated `axiom/models/gnn_v1.npz`; all 50 tests still pass.
+- Blast propagation verified: `resolve_redirects` (fan-out 14) → 5 downstream at threshold 0.4 (default 0.6 is deliberately strict; combined score = 0.5·pagerank + 0.5·risk).
+- Note: use `AXIOM_EMBED_PROVIDER=local` when no Ollama server is running, else each embed burns ~2.5s on connection timeout (GNN risk features are lexical/structural, so embedding provider does not change scores). Point `root_path` at a Windows path — `/tmp/...` (Git Bash) is not visible to the Windows API process.
+
 ## Build Order Status — all phases 1A–1G implemented + verified
 1A Foundation ✓ · 1B Parse/Embed ✓ (real tree-sitter + chromadb) · 1C eBPF/GNN ✓ (real eBPF proven in WSL; **real numpy GNN**) · 1D API/WS ✓ · 1E Frontend ✓ · 1F Patches ✓ (7 patterns + hypothesis verifier) · 1G Deploy ✓ (compose + helm + CI/CD).
 

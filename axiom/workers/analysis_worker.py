@@ -117,18 +117,48 @@ class AnalysisWorker:
                     mapping[fn.id] = features
         return mapping
 
+    # Directories that hold dependencies, build output, or caches — never source.
+    IGNORE_DIRS = frozenset({
+        ".git", "node_modules", ".venv", "venv", "env", "__pycache__",
+        "dist", "build", "out", "bin", "obj", ".next", ".nuxt", ".output",
+        "target", "vendor", "site-packages", ".axiom", ".mypy_cache",
+        ".pytest_cache", ".ruff_cache", ".turbo", ".cache", "coverage", "htmlcov",
+        ".gradle", ".idea", ".vscode-test",
+    })
+
     @staticmethod
-    def collect_source_files(root: str, languages: list[str] | None = None) -> list[str]:
-        """Walk a project root and return all supported source files."""
+    def _looks_generated(path: Path) -> bool:
+        """True for minified/bundled files (very long lines) or *.min.* / bundle names."""
+        name = path.name.lower()
+        if ".min." in name or name.endswith((".bundle.js", ".bundle.ts", "-min.js")):
+            return True
+        try:
+            with open(path, encoding="utf-8", errors="ignore") as fh:
+                for _ in range(6):
+                    line = fh.readline()
+                    if not line:
+                        break
+                    if len(line) > 2000:  # minified/bundled code has enormous lines
+                        return True
+        except OSError:
+            return False
+        return False
+
+    @classmethod
+    def collect_source_files(cls, root: str, languages: list[str] | None = None) -> list[str]:
+        """Walk a project root for supported source files, skipping deps and build output."""
         root_path = Path(root)
         if not root_path.exists():
             return []
         files: list[str] = []
         for path in root_path.rglob("*"):
-            if path.is_file() and detect_language(str(path)):
-                if any(part in {".git", "node_modules", ".venv", "__pycache__"} for part in path.parts):
-                    continue
-                files.append(str(path))
+            if not path.is_file() or not detect_language(str(path)):
+                continue
+            if any(part in cls.IGNORE_DIRS for part in path.parts):
+                continue
+            if cls._looks_generated(path):
+                continue
+            files.append(str(path))
         return files
 
 

@@ -1,0 +1,70 @@
+# api.yaml — AXIOM FastAPI Deployment + Service (+ optional Ingress).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-api
+  labels: {{- include "axiom.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: { app.kubernetes.io/name: axiom, app.kubernetes.io/component: api }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: axiom, app.kubernetes.io/component: api }
+    spec:
+      containers:
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["sh", "-c", "alembic upgrade head && uvicorn axiom.main:app --host 0.0.0.0 --port {{ .Values.api.port }}"]
+          ports:
+            - containerPort: {{ .Values.api.port }}
+          env:
+            - name: DATABASE_URL
+              value: {{ include "axiom.databaseUrl" . | quote }}
+            - name: CHROMA_URL
+              value: "http://{{ .Release.Name }}-chromadb:8000"
+            {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          readinessProbe:
+            httpGet: { path: /health, port: {{ .Values.api.port }} }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: {{ .Values.api.port }} }
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources: {{- toYaml .Values.api.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-api
+  labels: {{- include "axiom.labels" . | nindent 4 }}
+spec:
+  selector: { app.kubernetes.io/name: axiom, app.kubernetes.io/component: api }
+  ports:
+    - port: 80
+      targetPort: {{ .Values.api.port }}
+{{- if .Values.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-api
+  labels: {{- include "axiom.labels" . | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-api
+                port: { number: 80 }
+{{- end }}

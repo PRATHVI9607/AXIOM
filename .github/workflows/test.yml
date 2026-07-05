@@ -1,0 +1,39 @@
+# test.yml — run the AXIOM backend test suite on push/PR.
+name: tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Lint
+        run: |
+          black --check axiom tests
+          isort --check-only axiom tests
+      - name: Test
+        env:
+          DATABASE_URL: sqlite+aiosqlite:///./test.db
+          AXIOM_JWT_DEV_SECRET: ci-secret-key-that-is-at-least-32-bytes
+          AXIOM_EBPF_ENABLED: "false"
+        run: pytest tests/ -v --cov=axiom --cov-report=term-missing
+
+  frontend:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Dashboard typecheck
+        run: cd dashboard && npm ci && npm run lint
+      - name: Extension compile
+        run: cd vscode-extension && npm ci && npm run compile

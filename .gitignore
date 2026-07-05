@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Secrets & local state
+.env
+.axiom/
+*.pem
+
+# Node
+node_modules/
+dist/
+dashboard/dist/
+vscode-extension/out/
+*.vsix
+
+# Models (downloaded, not committed)
+axiom/models/*.pt
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,46 @@
+{
+  "name": "axiom-intelligence",
+  "displayName": "AXIOM Code Intelligence",
+  "description": "Inline failure-risk scoring and blast-radius prediction powered by AXIOM",
+  "version": "1.0.0",
+  "publisher": "axiom",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Linters", "Machine Learning", "Other"],
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguage:python",
+    "onLanguage:javascript",
+    "onLanguage:typescript",
+    "onLanguage:go",
+    "onLanguage:cpp"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "axiom.analyzeFile", "title": "AXIOM: Analyze Current File" },
+      { "command": "axiom.analyzeWorkspace", "title": "AXIOM: Analyze Workspace" },
+      { "command": "axiom.openDashboard", "title": "AXIOM: Open Dashboard" },
+      { "command": "axiom.showBlastRadius", "title": "AXIOM: Show Blast Radius for Function" }
+    ],
+    "configuration": {
+      "title": "AXIOM",
+      "properties": {
+        "axiom.serverUrl": { "type": "string", "default": "http://localhost:8000" },
+        "axiom.projectId": { "type": "string", "default": "default" },
+        "axiom.riskThreshold.warning": { "type": "number", "default": 0.5 },
+        "axiom.riskThreshold.error": { "type": "number", "default": 0.8 },
+        "axiom.autoAnalyzeOnSave": { "type": "boolean", "default": true }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.5.3"
+  }
+}

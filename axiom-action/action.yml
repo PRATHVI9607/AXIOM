@@ -1,0 +1,60 @@
+# action.yml — AXIOM risk-analysis GitHub Action (PRD §7.11).
+name: "AXIOM Risk Analysis"
+description: "Semantic runtime code-intelligence risk gate for pull requests"
+branding:
+  icon: "shield"
+  color: "blue"
+
+inputs:
+  axiom-server:
+    description: "URL of the AXIOM backend"
+    required: true
+  axiom-token:
+    description: "AXIOM API token (CI-scoped)"
+    required: true
+  project-id:
+    description: "AXIOM project id to analyze"
+    required: true
+  risk-threshold:
+    description: "Block/warn threshold in [0,1]"
+    required: false
+    default: "0.7"
+  block-on-high-risk:
+    description: "Fail the job when any function exceeds the threshold"
+    required: false
+    default: "true"
+  post-pr-comment:
+    description: "Post a summary comment on the PR"
+    required: false
+    default: "true"
+
+outputs:
+  report-path:
+    description: "Path to the generated axiom-report.json"
+    value: ${{ steps.analyze.outputs.report-path }}
+  max-risk:
+    description: "Highest function risk score found"
+    value: ${{ steps.analyze.outputs.max-risk }}
+
+runs:
+  using: "composite"
+  steps:
+    - id: analyze
+      shell: bash
+      env:
+        AXIOM_SERVER: ${{ inputs.axiom-server }}
+        AXIOM_TOKEN: ${{ inputs.axiom-token }}
+        AXIOM_PROJECT: ${{ inputs.project-id }}
+        RISK_THRESHOLD: ${{ inputs.risk-threshold }}
+        BLOCK: ${{ inputs.block-on-high-risk }}
+      run: python "${GITHUB_ACTION_PATH}/entrypoint.py"
+
+    - id: comment
+      if: ${{ inputs.post-pr-comment == 'true' && github.event_name == 'pull_request' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        if [ -f axiom-report.md ]; then
+          gh pr comment "${{ github.event.number }}" --body-file axiom-report.md || true
+        fi

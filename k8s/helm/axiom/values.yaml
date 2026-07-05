@@ -1,0 +1,37 @@
+# values.yaml — default AXIOM deployment configuration.
+image:
+  repository: ghcr.io/prathvi9607/axiom
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+api:
+  port: 8000
+  resources:
+    requests: { cpu: "250m", memory: "512Mi" }
+    limits: { cpu: "1", memory: "2Gi" }
+
+env:
+  AXIOM_LOG_LEVEL: INFO
+  AXIOM_EMBED_PROVIDER: ollama
+  AXIOM_EBPF_ENABLED: "false" # eBPF via privileged DaemonSet only; off in API pods
+  AXIOM_AIR_GAPPED: "false"
+
+postgres:
+  enabled: true
+  image: postgres:16-alpine
+  user: axiom
+  password: axiom # override via secret in production
+  db: axiom
+  storage: 5Gi
+
+chromadb:
+  enabled: true
+  image: chromadb/chroma:0.5.5
+  storage: 5Gi
+
+ingress:
+  enabled: false
+  host: axiom.local
+  className: nginx

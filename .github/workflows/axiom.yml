@@ -1,0 +1,27 @@
+# axiom.yml — AXIOM risk gate on every pull request (self-hosting the action).
+name: AXIOM Risk Analysis
+on: [pull_request]
+
+jobs:
+  axiom-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: ./axiom-action
+        with:
+          axiom-server: ${{ secrets.AXIOM_SERVER_URL }}
+          axiom-token: ${{ secrets.AXIOM_API_TOKEN }}
+          project-id: ${{ secrets.AXIOM_PROJECT_ID }}
+          risk-threshold: "0.7"
+          block-on-high-risk: "true"
+          post-pr-comment: "true"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: axiom-report
+          path: axiom-report.json

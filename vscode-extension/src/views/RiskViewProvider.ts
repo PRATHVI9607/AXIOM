@@ -46,27 +46,53 @@ export class RiskViewProvider implements vscode.WebviewViewProvider {
     try {
       const key = `axiom.project.${folder.uri.fsPath}`;
       let projectId = this.context.workspaceState.get<string>(key);
-      if (!projectId) {
-        projectId = await this.client.createProject(this.context, folder.name, folder.uri.fsPath);
-        await this.context.workspaceState.update(key, projectId);
-      }
-      await this.client.analyzeWorkspace(this.context, projectId);
 
-      // Poll until the graph is populated.
-      let nodes: GraphNode[] = [];
-      for (let i = 0; i < 60; i++) {
-        await new Promise((r) => setTimeout(r, 1000));
-        const graph = await this.client.getGraph(this.context, projectId);
-        if (graph.total_nodes > 0) {
-          nodes = graph.nodes;
-          break;
+      // Create (or recreate a stale) project, then kick off analysis.
+      const startAnalysis = async (): Promise<string> => {
+        if (!projectId) {
+          projectId = await this.client.createProject(this.context, folder.name, folder.uri.fsPath);
+          await this.context.workspaceState.update(key, projectId);
         }
+        try {
+          await this.client.analyzeWorkspace(this.context, projectId);
+        } catch (e) {
+          // Cached id points at a project this backend/DB doesn't have — recreate once.
+          if ((e as Error).message.includes("404")) {
+            projectId = await this.client.createProject(this.context, folder.name, folder.uri.fsPath);
+            await this.context.workspaceState.update(key, projectId);
+            await this.client.analyzeWorkspace(this.context, projectId);
+          } else {
+            throw e;
+          }
+        }
+        return projectId;
+      };
+      const pid = await startAnalysis();
+
+      // Poll until the graph is populated. The graph endpoint 404s until analysis
+      // finishes, so tolerate errors and keep waiting.
+      let nodes: GraphNode[] = [];
+      for (let i = 0; i < 90; i++) {
+        await new Promise((r) => setTimeout(r, 1000));
+        try {
+          const graph = await this.client.getGraph(this.context, pid);
+          if (graph.total_nodes > 0) {
+            nodes = graph.nodes;
+            break;
+          }
+        } catch {
+          /* not ready yet — keep polling */
+        }
+        if (i % 3 === 0) this.post({ type: "status", message: `Analyzing workspace… (${i}s)` });
       }
       if (nodes.length === 0) {
-        this.post({ type: "error", message: "No source files found in this workspace." });
+        this.post({
+          type: "error",
+          message: "No results — the folder may have no supported source files, or analysis is still running. Try again.",
+        });
         return;
       }
-      const health = await this.client.getHealthScore(this.context, projectId);
+      const health = await this.client.getHealthScore(this.context, pid);
       const top = [...nodes].sort((a, b) => b.risk_score - a.risk_score).slice(0, 40);
       this.post({ type: "results", health, nodes: top });
       this.onNodes(nodes); // feed gutter decorations too

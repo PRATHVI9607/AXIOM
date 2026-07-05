@@ -7,16 +7,23 @@ Everything to run AXIOM, analyze a project, and read the results. Windows + WSL2
 ## 0. Prerequisites (one-time)
 
 - Python 3.11+ (3.14 works)
-- Node.js 18+
+- Node.js 18+ (only for the dashboard / building the extension)
 - WSL2 with Ubuntu (only for live eBPF; everything else runs without it)
 
+### Install AXIOM (gives you the `axiom` command)
 ```powershell
 cd c:\Workspace\AXIOM
 python -m venv .venv
-.venv\Scripts\python.exe -m pip install -e ".[dev]"
-copy .env.example .env          # SQLite default works out of the box
-.venv\Scripts\alembic.exe upgrade head
+.venv\Scripts\python.exe -m pip install -e ".[dev]"    # editable install from source
 ```
+Prefer a built artifact? `make build-wheel` then
+`pip install dist\loki_axiom-1.0.0-py3-none-any.whl`.
+
+Once published to PyPI (see [PUBLISHING.md](PUBLISHING.md)), it's just:
+```powershell
+pip install loki-axiom
+```
+The distribution is named **`loki-axiom`**; the import package and CLI stay `axiom`.
 
 Optional heavier features:
 ```powershell
@@ -40,15 +47,18 @@ axiom serve                    # migrates the DB, then serves on :8000
 
 ## 2. Analyze a project
 
-Analyze AXIOM itself (seeds a project, runs analysis, prints a ready link):
+**Fastest — the CLI, no server needed:**
 ```powershell
-.venv\Scripts\python.exe scripts\demo.py
+axiom analyze "C:\path\to\any\project"     # prints health + top-risk functions
+axiom analyze .                             # current folder
+axiom analyze . --top 25 --json report.json
 ```
-Analyze YOUR project: create it via the API with a **Windows path**, then trigger a workspace scan.
-`/tmp/...` (Git Bash) paths are invisible to the Windows API process — always use `C:/...`.
+Runs the whole pipeline in-process. Build artifacts (`dist/`, `out/`, `node_modules`,
+minified files) are skipped automatically.
 
-Tip: if no Ollama server is running, set `AXIOM_EMBED_PROVIDER=local` before starting the
-server for instant embeddings (GNN risk uses lexical/structural features, so scores are unchanged).
+**Against a running server** (for the dashboard/extension to read the same data): use the
+sidebar (Section 4) or `POST /api/v1/analyze/workspace`. Always pass a **Windows path**
+(`C:\...`) — `/tmp/...` (Git Bash) is invisible to the Windows process.
 
 ---
 

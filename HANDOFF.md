@@ -18,6 +18,16 @@
 - **Fixed passlib/bcrypt 4.x incompatibility** — replaced passlib with direct `bcrypt` in `core/security.py` (72-byte cap handled); updated pyproject dep.
 - **Added PRD-required tests:** `test_embedder.py`, `test_security.py`, `test_auth_ws.py` (eBPF client fallback, WebSocket auth accept/reject, GNN model, patch API). **Total now 50 tests, all pass.**
 
+## Session 3 — PyPI packaging as `loki-axiom` (latest)
+- Renamed the distribution to **`loki-axiom`** (import package + `axiom` CLI unchanged). Added PyPI metadata (keywords, classifiers, urls) to pyproject. Wheel builds clean: `dist/loki_axiom-1.0.0-py3-none-any.whl`.
+- Makefile: `build-wheel`, `publish-test` (TestPyPI), `publish` (PyPI). **`PUBLISHING.md`** documents the token setup + `python -m build` + `twine upload` flow. After publishing: `pip install loki-axiom`.
+
+## Session 3 — Result quality + standalone CLI (latest)
+- **Skip generated/dependency code:** `collect_source_files` now ignores `dist/build/out/.venv/node_modules/…` and minified/bundled files (huge-line + `.min.` heuristic). Self-scan dropped from **1591 junk functions → 310 real** ones; top-risk is now credible (auth/token/crypto surface).
+- **Named arrow functions:** `ast_service` borrows a name from the parent `variable_declarator`/`pair`/assignment, so `const scan = () => …` shows as `scan` not `<anonymous>` (only true inline callbacks stay anonymous).
+- **`axiom analyze <path>` is now standalone/in-process** — no running server needed. Runs AST→embed→GNN directly, prints health + top-risk, `--top N`, `--json out.json`. Verified on the extension src (69 fns). 50 tests pass.
+- **Wheel builds:** `pip wheel . --no-deps` → `dist/axiom-1.0.0-py3-none-any.whl` (installable artifact; not yet on public PyPI).
+
 ## Session 3 — Auto-start bugfix + sidebar UI polish + production guide
 - **Fixed "No backend" in the sidebar:** the extension was only trying `axiom` on system PATH (missing — it lives in the project `.venv`). Now `src/backend.ts` walks up from each workspace folder finding `.venv/Scripts|bin/axiom(.exe)` (or `python -m axiom.cli serve`), plus honors `axiom.pythonPath`, plus global `axiom`. Spawns with the repo as cwd, logs every candidate to the "AXIOM Backend" output channel, and reveals it on failure. Verified `.venv/Scripts/axiom.exe` exists.
 - **Sidebar UI redesigned:** removed the redundant title, refined scan button (magnifier icon, tactile press), scepter empty state, spinner status, health score + risk-bucket chips, tighter risk rows. HTML-escaped all injected text.

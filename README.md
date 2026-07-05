@@ -7,18 +7,38 @@ See [PRD.md](PRD.md) for the full spec and [CLAUDE.md](CLAUDE.md) for build rule
 
 ## Status
 
-Phase 1A–1D backend is **built and runnable**; frontend + extension are scaffolded.
-See [HANDOFF.md](HANDOFF.md) for exactly what's done and what's next.
+All phases (1A–1G) implemented and verified — 50 tests passing. Real tree-sitter parsing,
+real eBPF tracing via WSL, a numpy GNN with bundled weights, React dashboard, and a VS Code
+extension with a workspace-risk sidebar. See [SETUP.md](SETUP.md) to run it, [PRODUCTION.md](PRODUCTION.md)
+to deploy it, and [HANDOFF.md](HANDOFF.md) for the full build log.
+
+## Install
+
+```powershell
+pip install loki-axiom      # once published (see PUBLISHING.md); or `pip install -e .` from source
+```
+Distribution name is `loki-axiom`; the import package and CLI command are `axiom`.
+
+## Three ways to use it
+
+```powershell
+# 1. CLI — no server needed
+axiom analyze "C:\path\to\project"
+
+# 2. VS Code sidebar — click the scepter icon, then "Scan workspace" (backend auto-starts)
+
+# 3. Web dashboard
+axiom serve                     # backend on :8000
+cd dashboard && npm run dev     # UI on :3000
+```
 
 ## Quick start (backend, local, no Docker)
 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate            # Windows PowerShell: .venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
-copy .env.example .env            # then edit as needed (SQLite works out of the box)
-alembic upgrade head
-uvicorn axiom.main:app --reload
+pip install -e ".[dev]"           # gives you the `axiom` command
+axiom serve                       # migrates the DB, then serves on :8000
 ```
 
 Open http://localhost:8000/docs for the interactive API, http://localhost:8000/health for status.

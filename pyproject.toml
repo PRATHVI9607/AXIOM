@@ -4,13 +4,21 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "axiom"
+name = "loki-axiom"
 version = "1.0.0"
 description = "AXIOM — Semantic Runtime Code Intelligence Platform"
 authors = [{ name = "Rakshak S", email = "rakshaksujith@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Proprietary" }
+keywords = ["code-intelligence", "static-analysis", "ebpf", "gnn", "security", "ast"]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Security",
+]
 
 dependencies = [
     # Web framework
@@ -41,6 +49,11 @@ dependencies = [
     "python-dotenv>=1.0",
     "numpy>=1.26",
 ]
+
+[project.urls]
+Homepage = "https://github.com/PRATHVI9607/AXIOM"
+Repository = "https://github.com/PRATHVI9607/AXIOM"
+Issues = "https://github.com/PRATHVI9607/AXIOM/issues"
 
 [project.scripts]
 axiom = "axiom.cli:main"

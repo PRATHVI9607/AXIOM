@@ -42,6 +42,9 @@ dependencies = [
     "numpy>=1.26",
 ]
 
+[project.scripts]
+axiom = "axiom.cli:main"
+
 [project.optional-dependencies]
 # Heavy ML stack — optional so the API can boot without torch installed.
 ml = [

@@ -28,11 +28,13 @@ Optional heavier features:
 
 ## 1. Start the backend
 
+After `pip install -e .` you get an `axiom` command:
 ```powershell
-cd c:\Workspace\AXIOM
-.venv\Scripts\python.exe -m uvicorn axiom.main:app --port 8000
+axiom serve                    # migrates the DB, then serves on :8000
 ```
-Verify: http://localhost:8000/health · interactive API at http://localhost:8000/docs
+(or `.venv\Scripts\axiom.exe serve`). Verify: http://localhost:8000/health · docs at /docs.
+
+**You usually don't need to run this manually** — the VS Code extension auto-starts it (Section 4).
 
 ---
 
@@ -71,12 +73,24 @@ code --install-extension c:\Workspace\AXIOM\vscode-extension\axiom-intelligence-
 ```
 Then reload VS Code. Or, for development, open `vscode-extension/` and press **F5**.
 
-**The AXIOM sidebar (easiest path):**
-1. Click the **scepter icon** in the activity bar (left rail) → the "Workspace Risk" panel opens.
-2. First time only: it asks for a token → paste one from `demo.py` / `analyze.py` (Command Palette `AXIOM: Set API Token`).
-3. Click **Scan workspace** (or the search icon in the panel title). It analyzes the **current folder** and lists functions by risk with a health score. Click any row to jump to that line.
+**The AXIOM sidebar (one click, nothing else):**
+1. Click the **scepter icon** in the activity bar (left rail) → "Workspace Risk" panel.
+2. Click **Scan workspace**.
 
-No project id needed — the sidebar creates/reuses a project for the open folder automatically.
+That's it. The extension **auto-starts the backend** (`axiom serve`) if it isn't already running,
+then analyzes the current folder and lists functions by risk. Click any row to jump to file:line.
+No terminal, no token, no project id. Requires `axiom` to be installed (`pip install axiom`) OR
+`axiom.backendCommand` pointing at a binary (see below).
+
+## 4b. How the extension finds a backend (3 modes)
+
+| Mode | Setup | `axiom.serverUrl` / `axiom.backendCommand` |
+|---|---|---|
+| **Local pip** (default) | `pip install axiom` | extension runs `axiom serve` for you |
+| **Standalone binary** | `make build-binary` → `dist/axiom` | set `axiom.backendCommand` to that path |
+| **Hosted / team server** | run AXIOM on a server with `AXIOM_AUTH_REQUIRED=true` | set `axiom.serverUrl` to its URL, then `AXIOM: Set API Token` |
+
+Toggle auto-start with `axiom.autoStartBackend`. Backend logs appear in the "AXIOM Backend" output channel.
 
 **Inline while coding:** open a source file → red/amber/green gutter dots per function,
 hover for the score, high-risk functions in the **Problems** panel, backend state in the status bar.

@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     github_client_id: str = Field(default="", alias="GITHUB_CLIENT_ID")
     github_client_secret: str = Field(default="", alias="GITHUB_CLIENT_SECRET")
     auth_provider: Literal["github", "local"] = Field(default="github", alias="AXIOM_AUTH_PROVIDER")
+    # Auth is OFF by default: AXIOM is a laptop-runnable single-user tool on
+    # localhost (PRD "usable in 5 minutes"). Turn ON for shared/team/prod servers
+    # exposed beyond localhost — then GitHub OAuth or API keys are enforced.
+    auth_required: bool = Field(default=False, alias="AXIOM_AUTH_REQUIRED")
 
     # ── eBPF ─────────────────────────────────────────────
     ebpf_enabled: bool = Field(default=True, alias="AXIOM_EBPF_ENABLED")

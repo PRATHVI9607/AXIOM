@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import { AxiomClient } from "./axiomClient";
 import { RiskDecorations } from "./providers/RiskDecorations";
 import { RiskViewProvider } from "./views/RiskViewProvider";
+import { stopBackend } from "./backend";
 
 const client = new AxiomClient();
 let statusBar: vscode.StatusBarItem;
@@ -145,4 +146,5 @@ function isSupported(languageId: string): boolean {
 
 export function deactivate(): void {
   statusBar?.dispose();
+  stopBackend();
 }

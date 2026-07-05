@@ -1,6 +1,6 @@
 # Makefile — common AXIOM developer commands. Run `make help` to list them.
 .DEFAULT_GOAL := help
-.PHONY: help install run run-dev test migrate lint build-ext build-dash setup-ebpf trace
+.PHONY: help install run run-dev test migrate lint build-ext build-dash setup-ebpf trace serve build-binary
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -14,6 +14,13 @@ run:  ## Start full stack with Docker Compose
 
 run-dev:  ## Start backend in hot-reload mode (needs local Postgres or SQLite URL)
 	uvicorn axiom.main:app --reload --host 0.0.0.0 --port 8000
+
+serve:  ## Start backend via the axiom CLI (migrates then serves)
+	axiom serve --port 8000
+
+build-binary:  ## Build a standalone backend binary with PyInstaller (dist/axiom)
+	pip install pyinstaller
+	pyinstaller packaging/axiom.spec --distpath dist --workpath build/pyi --noconfirm
 
 test:  ## Run all tests with coverage
 	pytest tests/ -v --cov=axiom --cov-report=term-missing

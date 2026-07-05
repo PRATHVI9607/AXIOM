@@ -19,11 +19,13 @@ async def create_project(
     current: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ProjectOut:
+    # Synthetic local principal has no users row — leave owner unset (FK-safe).
+    owner_id = None if current.sub == "user:local" else current.sub.removeprefix("user:")
     project = Project(
         name=body.name,
         root_path=body.root_path,
         languages=body.languages,
-        owner_id=current.sub.removeprefix("user:"),
+        owner_id=owner_id,
     )
     db.add(project)
     await db.flush()

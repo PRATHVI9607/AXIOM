@@ -1,6 +1,7 @@
 // RiskViewProvider.ts — AXIOM sidebar: scan the current workspace, show risk inline.
 import * as vscode from "vscode";
 import { AxiomClient, type GraphNode } from "../axiomClient";
+import { ensureBackend } from "../backend";
 
 export class RiskViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "axiom.riskView";
@@ -34,9 +35,10 @@ export class RiskViewProvider implements vscode.WebviewViewProvider {
       this.post({ type: "error", message: "Open a folder first." });
       return;
     }
-    const token = await this.context.secrets.get("axiom.token");
-    if (!token) {
-      this.post({ type: "needToken" });
+
+    this.post({ type: "status", message: "Starting backend…" });
+    if (!(await ensureBackend())) {
+      this.post({ type: "error", message: "No AXIOM backend. Install it or set axiom.serverUrl." });
       return;
     }
 
@@ -69,7 +71,13 @@ export class RiskViewProvider implements vscode.WebviewViewProvider {
       this.post({ type: "results", health, nodes: top });
       this.onNodes(nodes); // feed gutter decorations too
     } catch (err) {
-      this.post({ type: "error", message: (err as Error).message });
+      const message = (err as Error).message;
+      if (message.includes("401")) {
+        // Backend has auth enabled — ask for a token.
+        this.post({ type: "needToken" });
+      } else {
+        this.post({ type: "error", message });
+      }
     }
   }
 

@@ -52,7 +52,27 @@
     "configuration": {
       "title": "AXIOM",
       "properties": {
-        "axiom.serverUrl": { "type": "string", "default": "http://localhost:8000" },
+        "axiom.serverUrl": {
+          "type": "string",
+          "default": "http://localhost:8000",
+          "description": "AXIOM backend URL. Point at a hosted server to skip the local backend (set a token via 'AXIOM: Set API Token')."
+        },
+        "axiom.autoStartBackend": {
+          "type": "boolean",
+          "default": true,
+          "description": "If the backend at serverUrl is down, auto-start `axiom serve` locally."
+        },
+        "axiom.backendCommand": {
+          "type": "string",
+          "default": "",
+          "description": "Override the command used to start the backend (e.g. a PyInstaller binary path). Defaults to `axiom serve`."
+        },
+        "axiom.embedProvider": {
+          "type": "string",
+          "enum": ["local", "ollama", "openai"],
+          "default": "local",
+          "description": "Embedding provider passed to an auto-started backend."
+        },
         "axiom.projectId": { "type": "string", "default": "default" },
         "axiom.riskThreshold.warning": { "type": "number", "default": 0.5 },
         "axiom.riskThreshold.error": { "type": "number", "default": 0.8 },

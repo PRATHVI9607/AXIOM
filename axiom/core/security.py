@@ -104,11 +104,24 @@ class CurrentUser:
         self.roles: list[str] = claims.get("roles", ["developer"])
 
 
+LOCAL_PRINCIPAL_CLAIMS = {
+    "username": "local",
+    "email": "local@axiom.dev",
+    "roles": ["admin"],
+}
+
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
     settings: Settings = Depends(get_settings),
 ) -> CurrentUser:
-    """Validate the bearer token and return the principal, or raise 401."""
+    """Validate the bearer token and return the principal, or raise 401.
+
+    When `auth_required` is off (default, local single-user mode) every request is
+    treated as a local admin so the dashboard/extension work with zero setup.
+    """
+    if not settings.auth_required:
+        return CurrentUser(sub="user:local", claims=LOCAL_PRINCIPAL_CLAIMS)
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

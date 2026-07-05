@@ -11,6 +11,8 @@ _tmp = tempfile.mkdtemp()
 os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{_tmp}/test.db"
 os.environ["AXIOM_JWT_DEV_SECRET"] = "test-secret-key-that-is-long-enough-32b"
 os.environ["AXIOM_EBPF_ENABLED"] = "false"
+# Exercise the real auth path in tests (product default is auth-off local mode).
+os.environ["AXIOM_AUTH_REQUIRED"] = "true"
 
 
 @pytest.fixture(scope="session", autouse=True)

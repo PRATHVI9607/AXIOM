@@ -18,6 +18,19 @@
 - **Fixed passlib/bcrypt 4.x incompatibility** — replaced passlib with direct `bcrypt` in `core/security.py` (72-byte cap handled); updated pyproject dep.
 - **Added PRD-required tests:** `test_embedder.py`, `test_security.py`, `test_auth_ws.py` (eBPF client fallback, WebSocket auth accept/reject, GNN model, patch API). **Total now 50 tests, all pass.**
 
+## Session 3 — Distribution: `axiom` CLI + extension auto-start + binary + hosted
+- **`axiom` console script** (`axiom/cli.py`, entry point in pyproject): `axiom serve` (ensures schema via Alembic, else create_all for local SQLite, then uvicorn), `axiom analyze <path>`, `axiom version`. Verified: `pip install -e . --no-deps` registers it; `axiom serve` boots + migrates + serves no-auth 200.
+- **Extension auto-starts the backend** (`src/backend.ts`): on scan, if `serverUrl/health` is down and `axiom.autoStartBackend`, spawns `axiom serve --port <p>` (or `axiom.backendCommand`), streams logs to an output channel, polls health ~30s, then analyzes. Killed on deactivate. → sidebar is truly one-click, no terminal/token.
+- **Extension config added:** `autoStartBackend`, `backendCommand` (binary path), `embedProvider` (default local), richer `serverUrl` (hosted mode).
+- **PyInstaller** standalone binary: `packaging/axiom_entry.py` + `packaging/axiom.spec` (bundles alembic, gnn_v1.npz, ebpf .c; excludes torch), `make build-binary`. Point `axiom.backendCommand` at `dist/axiom`.
+- **Hosted mode:** set `axiom.serverUrl` to a server running `AXIOM_AUTH_REQUIRED=true` + `AXIOM: Set API Token`.
+- 50 tests pass; extension compiles; vsix repackaged (12.7 KB) + reinstalled.
+
+## Session 3 — Zero-friction local auth (no token needed)
+- **`AXIOM_AUTH_REQUIRED` (default false).** Local single-user mode: `get_current_user` returns a synthetic local admin, so dashboard + extension work with no token/login. WebSocket skips the JWT gate too. Startup logs a warning that auth is off. Set `true` for shared/networked servers (enforces OAuth/API keys). `projects.create` leaves `owner_id` null for the local principal (FK-safe).
+- Extension sidebar no longer pre-requires a token; it scans immediately and only prompts for a token if the backend returns 401 (auth-on server).
+- Tests set `AXIOM_AUTH_REQUIRED=true` so the auth path stays covered; 50 pass. Verified over HTTP: create/analyze/graph all work with **no auth header** (61-fn scan, health 0.84).
+
 ## Session 3 — VS Code sidebar (scepter icon, scan current workspace)
 - Added an activity-bar container "AXIOM" with a custom Loki-scepter SVG icon (`media/scepter.svg`) and a webview view "Workspace Risk" (`src/views/RiskViewProvider.ts`).
 - Sidebar flow: **Scan workspace** button → creates/reuses a project for the open folder (cached in `workspaceState`), runs `/analyze/workspace`, polls the graph, renders a health score + risk buckets + clickable risk list (click a row → jumps to file:line). Feeds nodes to the gutter decorations too. Needs a token once (`AXIOM: Set API Token`).

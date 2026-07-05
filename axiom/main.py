@@ -22,8 +22,14 @@ logger = logging.getLogger("axiom")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup/shutdown hooks (PRD §7.7 startup sequence)."""
-    logger.info("AXIOM v%s starting — embed=%s eBPF=%s air_gapped=%s",
-                __version__, settings.embed_provider, settings.ebpf_available, settings.air_gapped)
+    logger.info("AXIOM v%s starting — embed=%s eBPF=%s air_gapped=%s auth=%s",
+                __version__, settings.embed_provider, settings.ebpf_available, settings.air_gapped,
+                "required" if settings.auth_required else "OFF (local mode)")
+    if not settings.auth_required:
+        logger.warning(
+            "Auth is OFF — every request is a local admin. Fine for localhost; "
+            "set AXIOM_AUTH_REQUIRED=true before exposing AXIOM to a network."
+        )
     # Warm the analysis worker (loads parser, GNN weights if present).
     from axiom.workers.analysis_worker import get_worker
 
@@ -70,12 +76,14 @@ async def root() -> dict[str, str]:
 async def websocket_endpoint(
     websocket: WebSocket, project_id: str, token: str = Query(default="")
 ) -> None:
-    """Real-time channel. Requires a valid JWT as the `token` query param."""
-    try:
-        decode_token(token)
-    except jwt.InvalidTokenError:
-        await websocket.close(code=1008)  # policy violation
-        return
+    """Real-time channel. Requires a valid JWT as the `token` query param
+    unless auth is disabled (local single-user mode)."""
+    if settings.auth_required:
+        try:
+            decode_token(token)
+        except jwt.InvalidTokenError:
+            await websocket.close(code=1008)  # policy violation
+            return
     await manager.connect(project_id, websocket)
     try:
         while True:

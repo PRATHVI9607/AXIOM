@@ -78,6 +78,10 @@ line_length = 100
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "-v"
+filterwarnings = [
+    # Starlette's TestClient httpx deprecation — third-party, not our code.
+    "ignore:Using .httpx. with .starlette",
+]
 
 [tool.mypy]
 python_version = "3.11"

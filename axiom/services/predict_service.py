@@ -16,11 +16,16 @@ class FailurePredictor:
         self,
         graph: IntentGraph,
         target_id: str,
-        risk_threshold: float = 0.6,
+        risk_threshold: float = 0.35,
         top_k: int = 10,
         alpha: float = 0.15,
     ) -> list[dict[str, Any]]:
-        """Rank downstream functions by personalized PageRank × node risk."""
+        """Rank downstream functions by personalized PageRank × node risk.
+
+        The combined score is 0.5·pagerank + 0.5·node_risk; propagated nodes peak
+        around 0.5, so the default threshold (0.35) surfaces a useful cascade
+        rather than the empty list a 0.6 gate produces on real codebases.
+        """
         if target_id not in graph.nodes:
             return []
         scores = self._personalized_pagerank(graph, target_id, alpha)

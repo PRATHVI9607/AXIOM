@@ -39,7 +39,9 @@ class Settings(BaseSettings):
     # ── Auth ─────────────────────────────────────────────
     jwt_private_key: str = Field(default="", alias="AXIOM_JWT_PRIVATE_KEY")
     jwt_public_key: str = Field(default="", alias="AXIOM_JWT_PUBLIC_KEY")
-    jwt_dev_secret: str = Field(default="dev-insecure-secret", alias="AXIOM_JWT_DEV_SECRET")
+    jwt_dev_secret: str = Field(
+        default="axiom-dev-only-secret-change-me-32bytes+", alias="AXIOM_JWT_DEV_SECRET"
+    )
     jwt_expiry_hours: int = 24
     jwt_refresh_days: int = 7
     github_client_id: str = Field(default="", alias="GITHUB_CLIENT_ID")

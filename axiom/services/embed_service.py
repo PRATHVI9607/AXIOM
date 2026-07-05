@@ -30,16 +30,26 @@ class Embedder:
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
         self.provider = self.settings.embed_provider
+        # Circuit breaker: once a provider is unreachable, stop retrying it for the
+        # rest of the run so a workspace scan doesn't stall N × connect-timeout.
+        self._degraded = False
 
     async def embed_text(self, text: str) -> list[float]:
         """Embed a single string via the configured provider, with fallbacks."""
+        if self._degraded or self.provider == "local":
+            return self._embed_fallback(text)
         try:
             if self.provider == "ollama":
                 return await self._embed_ollama(text)
             if self.provider == "openai":
                 return await self._embed_openai(text)
         except Exception as exc:  # noqa: BLE001 - fall back rather than crash
-            logger.warning("Embedding provider '%s' failed, using local fallback: %s", self.provider, exc)
+            self._degraded = True
+            logger.warning(
+                "Embedding provider '%s' unreachable; using local fallback for this run: %s",
+                self.provider,
+                exc,
+            )
         return self._embed_fallback(text)
 
     async def embed_batch(self, texts: Sequence[str], batch_size: int = 32) -> list[list[float]]:
@@ -59,7 +69,8 @@ class Embedder:
 
     # ── Providers ───────────────────────────────────────
     async def _embed_ollama(self, text: str) -> list[float]:
-        async with httpx.AsyncClient(timeout=30) as client:
+        # Short connect timeout so an absent Ollama trips the breaker fast.
+        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0, connect=1.0)) as client:
             resp = await client.post(
                 f"{self.settings.ollama_url}/api/embeddings",
                 json={"model": self.settings.ollama_model, "prompt": text},

@@ -18,6 +18,12 @@
 - **Fixed passlib/bcrypt 4.x incompatibility** — replaced passlib with direct `bcrypt` in `core/security.py` (72-byte cap handled); updated pyproject dep.
 - **Added PRD-required tests:** `test_embedder.py`, `test_security.py`, `test_auth_ws.py` (eBPF client fallback, WebSocket auth accept/reject, GNN model, patch API). **Total now 50 tests, all pass.**
 
+## Session 3 fixes (post real-run hardening)
+- **Embedder circuit breaker** — once a provider is unreachable it stops retrying for the run. Full `psf/requests` scan with default Ollama provider (no server) dropped from minutes → **11s**. Added 1s connect timeout on the Ollama call.
+- **Blast-radius default threshold 0.6 → 0.35** — 0.6 returned empty on real code (combined score = 0.5·pagerank + 0.5·risk peaks ~0.5). Now returns real cascades with failure paths.
+- **Secure dev JWT secret default** (≥32 bytes) — kills weak-key warning.
+- **pytest filterwarnings** — silences third-party Starlette deprecation. Suite now **50 passed, 0 warnings, ~6s**.
+
 ## Real-world run (session 3) — validated on psf/requests over HTTP
 - Booted the actual uvicorn API, created a project pointing at a cloned real repo (`psf/requests`, 19 files), ran `/analyze/workspace`, fetched `/graph` + `/graph/health` + `/analyze/function` over HTTP.
 - Result: **268 functions, 347 edges**; blast radius returned in 4–7ms.

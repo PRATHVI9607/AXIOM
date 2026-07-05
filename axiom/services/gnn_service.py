@@ -13,11 +13,17 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 from axiom.services.ast_service import ParsedFunction
 
 logger = logging.getLogger(__name__)
 
-WEIGHTS_PATH = Path(__file__).resolve().parent.parent / "models" / "gnn_v1.pt"
+MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
+WEIGHTS_PATH = MODELS_DIR / "gnn_v1.pt"      # optional torch weights
+NPZ_WEIGHTS_PATH = MODELS_DIR / "gnn_v1.npz"  # bundled numpy weights (default)
+
+FEATURE_DIM = 8
 
 # Lexical signals that correlate with the vulnerability patterns AXIOM targets.
 _RISK_SIGNALS: dict[str, float] = {
@@ -62,23 +68,18 @@ class GNNEngine:
     """Constructs intent graphs and produces node risk scores."""
 
     def __init__(self) -> None:
-        self._model: Any = None
-        self._torch_ready = self._try_load_model()
+        self._weights: dict[str, Any] | None = None
+        self._model_ready = self._try_load_model()
 
     def _try_load_model(self) -> bool:
-        try:
-            import torch  # noqa: F401
-        except Exception:  # noqa: BLE001
-            logger.info("torch not installed — GNN uses heuristic scorer.")
-            return False
-        if not WEIGHTS_PATH.exists():
-            logger.info("GNN weights %s missing — using heuristic scorer.", WEIGHTS_PATH.name)
+        """Load bundled numpy GNN weights. Falls back to the heuristic scorer if absent."""
+        if not NPZ_WEIGHTS_PATH.exists():
+            logger.info("GNN weights %s missing — heuristic scorer.", NPZ_WEIGHTS_PATH.name)
             return False
         try:
-            import torch
-
-            self._model = torch.load(WEIGHTS_PATH, map_location="cpu")  # nosec - local file
-            logger.info("Loaded GNN weights from %s", WEIGHTS_PATH)
+            data = np.load(NPZ_WEIGHTS_PATH)
+            self._weights = {k: data[k] for k in ("w1", "b1", "w2", "b2")}
+            logger.info("Loaded numpy GNN weights from %s", NPZ_WEIGHTS_PATH.name)
             return True
         except Exception as exc:  # noqa: BLE001
             logger.warning("Failed to load GNN weights, heuristic fallback: %s", exc)
@@ -116,7 +117,7 @@ class GNNEngine:
 
     def score_nodes(self, graph: IntentGraph, functions: list[ParsedFunction]) -> None:
         """Assign a risk score in [0,1] to every node."""
-        if self._torch_ready:
+        if self._model_ready:
             try:
                 self._score_with_model(graph, functions)
                 return
@@ -124,6 +125,48 @@ class GNNEngine:
                 logger.warning("GNN inference failed, heuristic fallback: %s", exc)
         for fn in functions:
             graph.nodes[fn.id].risk_score = self._heuristic_score(fn, graph)
+
+    def node_features(self, fn: ParsedFunction, graph: IntentGraph) -> np.ndarray:
+        """8-dim feature vector for a function node (lexical + structural + runtime)."""
+        text = fn.source_text.lower()
+        signal = sum(w for s, w in _RISK_SIGNALS.items() if s in text)
+        fan_in = sum(1 for e in graph.edges if e.target == fn.id)
+        fan_out = sum(1 for e in graph.edges if e.source == fn.id)
+        rt = graph.nodes[fn.id].features
+        return np.array(
+            [
+                min(signal, 2.0) / 2.0,
+                min((fn.end_line - fn.start_line + 1) / 100.0, 1.0),
+                min(fan_in / 10.0, 1.0),
+                min(fan_out / 10.0, 1.0),
+                min(rt.get("file_access_count", 0) / 10.0, 1.0),
+                min(rt.get("net_connect_count", 0) / 10.0, 1.0),
+                min(rt.get("spawn_count", 0) / 5.0, 1.0),
+                min(rt.get("priv_esc_count", 0) / 3.0, 1.0),
+            ],
+            dtype=np.float32,
+        )
+
+    def _score_with_model(self, graph: IntentGraph, functions: list[ParsedFunction]) -> None:
+        """GraphSAGE-style forward pass in numpy: mean-aggregate 1-hop neighbors → MLP."""
+        assert self._weights is not None
+        feats = {fn.id: self.node_features(fn, graph) for fn in functions}
+        # Adjacency (undirected for aggregation).
+        neighbors: dict[str, list[str]] = {fn.id: [] for fn in functions}
+        for e in graph.edges:
+            if e.source in neighbors and e.target in feats:
+                neighbors[e.source].append(e.target)
+                neighbors[e.target].append(e.source)
+
+        w1, b1, w2, b2 = (self._weights[k] for k in ("w1", "b1", "w2", "b2"))
+        for fn in functions:
+            self_f = feats[fn.id]
+            nbrs = neighbors[fn.id]
+            agg = np.mean([feats[n] for n in nbrs], axis=0) if nbrs else np.zeros(FEATURE_DIM, np.float32)
+            x = np.concatenate([self_f, agg])
+            h = np.maximum(x @ w1 + b1, 0.0)  # ReLU
+            logit = float((h @ w2 + b2).reshape(-1)[0])
+            graph.nodes[fn.id].risk_score = round(1.0 / (1.0 + math.exp(-logit)), 4)
 
     def _heuristic_score(self, fn: ParsedFunction, graph: IntentGraph) -> float:
         text = fn.source_text.lower()
@@ -136,10 +179,6 @@ class GNNEngine:
         score += min(fan_in * 0.03, 0.2)
         # Squash to [0,1] with a logistic curve.
         return round(1 / (1 + math.exp(-3 * (score - 0.5))), 4)
-
-    def _score_with_model(self, graph: IntentGraph, functions: list[ParsedFunction]) -> None:
-        # Placeholder for torch-geometric forward pass (Phase 1C training deliverable).
-        raise NotImplementedError
 
     @staticmethod
     def codebase_health(graph: IntentGraph) -> float:

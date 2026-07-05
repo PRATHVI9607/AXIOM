@@ -10,26 +10,29 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import bcrypt
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from passlib.context import CryptContext
 
 from axiom.core.config import Settings, get_settings
 
 logger = logging.getLogger(__name__)
 
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _bearer = HTTPBearer(auto_error=False)
 
 
 # ── Passwords ────────────────────────────────────────────
 def hash_password(password: str) -> str:
-    return _pwd_context.hash(password)
+    # bcrypt hard-caps input at 72 bytes; truncate deterministically.
+    return bcrypt.hashpw(password.encode()[:72], bcrypt.gensalt()).decode()
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return _pwd_context.verify(plain, hashed)
+    try:
+        return bcrypt.checkpw(plain.encode()[:72], hashed.encode())
+    except ValueError:
+        return False
 
 
 # ── API keys ─────────────────────────────────────────────

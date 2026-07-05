@@ -5,6 +5,17 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
 
+// Convenience: accept ?token=…&project=… once and persist to localStorage,
+// then clean them out of the URL. Lets the demo seeder hand you a ready link.
+const params = new URLSearchParams(window.location.search);
+const urlToken = params.get("token");
+const urlProject = params.get("project");
+if (urlToken) localStorage.setItem("axiom_token", urlToken);
+if (urlProject) localStorage.setItem("axiom_project", urlProject);
+if (urlToken || urlProject) {
+  window.history.replaceState({}, "", window.location.pathname);
+}
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>

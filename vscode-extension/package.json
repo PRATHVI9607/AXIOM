@@ -20,7 +20,9 @@
       { "command": "axiom.analyzeFile", "title": "AXIOM: Analyze Current File" },
       { "command": "axiom.analyzeWorkspace", "title": "AXIOM: Analyze Workspace" },
       { "command": "axiom.openDashboard", "title": "AXIOM: Open Dashboard" },
-      { "command": "axiom.showBlastRadius", "title": "AXIOM: Show Blast Radius for Function" }
+      { "command": "axiom.showBlastRadius", "title": "AXIOM: Show Blast Radius for Function" },
+      { "command": "axiom.setToken", "title": "AXIOM: Set API Token" },
+      { "command": "axiom.setProject", "title": "AXIOM: Set Project Id" }
     ],
     "configuration": {
       "title": "AXIOM",

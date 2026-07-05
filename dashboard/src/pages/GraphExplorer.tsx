@@ -4,7 +4,7 @@ import ForceGraph from "../components/ForceGraph";
 import { api, type FunctionAnalysis, type GraphResponse } from "../api";
 
 export default function GraphExplorer() {
-  const [projectId, setProjectId] = useState("");
+  const [projectId, setProjectId] = useState(localStorage.getItem("axiom_project") ?? "");
   const [graph, setGraph] = useState<GraphResponse | null>(null);
   const [selected, setSelected] = useState<FunctionAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);

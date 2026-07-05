@@ -49,6 +49,31 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("axiom.showBlastRadius", () =>
       vscode.window.showInformationMessage("AXIOM: run analysis first, then select a function.")
     ),
+    vscode.commands.registerCommand("axiom.setToken", async () => {
+      const token = await vscode.window.showInputBox({
+        prompt: "Paste your AXIOM JWT (from `python scripts/demo.py`)",
+        password: true,
+        ignoreFocusOut: true,
+      });
+      if (token) {
+        await context.secrets.store("axiom.token", token);
+        void vscode.window.showInformationMessage("AXIOM token saved.");
+        await refreshDecorations(context);
+      }
+    }),
+    vscode.commands.registerCommand("axiom.setProject", async () => {
+      const id = await vscode.window.showInputBox({
+        prompt: "AXIOM project id (printed by the demo seeder)",
+        value: projectId(),
+        ignoreFocusOut: true,
+      });
+      if (id) {
+        await vscode.workspace
+          .getConfiguration("axiom")
+          .update("projectId", id, vscode.ConfigurationTarget.Workspace);
+        await refreshDecorations(context);
+      }
+    }),
     vscode.commands.registerCommand("axiom.openDashboard", () => {
       const url = vscode.workspace.getConfiguration("axiom").get<string>("serverUrl", "");
       void vscode.env.openExternal(vscode.Uri.parse("http://localhost:3000"));

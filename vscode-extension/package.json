@@ -67,6 +67,11 @@
           "default": "",
           "description": "Override the command used to start the backend (e.g. a PyInstaller binary path). Defaults to `axiom serve`."
         },
+        "axiom.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to a Python interpreter that has `axiom` installed (used to run `python -m axiom.cli serve`). Leave blank to auto-detect a workspace .venv or a global `axiom`."
+        },
         "axiom.embedProvider": {
           "type": "string",
           "enum": ["local", "ollama", "openai"],

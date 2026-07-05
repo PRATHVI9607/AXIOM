@@ -18,6 +18,11 @@
 - **Fixed passlib/bcrypt 4.x incompatibility** — replaced passlib with direct `bcrypt` in `core/security.py` (72-byte cap handled); updated pyproject dep.
 - **Added PRD-required tests:** `test_embedder.py`, `test_security.py`, `test_auth_ws.py` (eBPF client fallback, WebSocket auth accept/reject, GNN model, patch API). **Total now 50 tests, all pass.**
 
+## Session 3 — Auto-start bugfix + sidebar UI polish + production guide
+- **Fixed "No backend" in the sidebar:** the extension was only trying `axiom` on system PATH (missing — it lives in the project `.venv`). Now `src/backend.ts` walks up from each workspace folder finding `.venv/Scripts|bin/axiom(.exe)` (or `python -m axiom.cli serve`), plus honors `axiom.pythonPath`, plus global `axiom`. Spawns with the repo as cwd, logs every candidate to the "AXIOM Backend" output channel, and reveals it on failure. Verified `.venv/Scripts/axiom.exe` exists.
+- **Sidebar UI redesigned:** removed the redundant title, refined scan button (magnifier icon, tactile press), scepter empty state, spinner status, health score + risk-bucket chips, tighter risk rows. HTML-escaped all injected text.
+- **`PRODUCTION.md`** — full go-live checklist (auth on + OAuth + RS256, Postgres, Docker/Helm, TLS/CORS, eBPF sidecar, models, CI, secrets, extension distribution).
+
 ## Session 3 — Distribution: `axiom` CLI + extension auto-start + binary + hosted
 - **`axiom` console script** (`axiom/cli.py`, entry point in pyproject): `axiom serve` (ensures schema via Alembic, else create_all for local SQLite, then uvicorn), `axiom analyze <path>`, `axiom version`. Verified: `pip install -e . --no-deps` registers it; `axiom serve` boots + migrates + serves no-auth 200.
 - **Extension auto-starts the backend** (`src/backend.ts`): on scan, if `serverUrl/health` is down and `axiom.autoStartBackend`, spawns `axiom serve --port <p>` (or `axiom.backendCommand`), streams logs to an output channel, polls health ~30s, then analyzes. Killed on deactivate. → sidebar is truly one-click, no terminal/token.
